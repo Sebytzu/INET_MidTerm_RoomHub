@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using RoomHub.Api.Common;
+using RoomHub.Api.Common.Cqrs;
 using RoomHub.Api.Domain.Rooms;
-using RoomHub.Api.Infrastructure;
 
 namespace RoomHub.Api.Features.Rooms.CreateRoom;
 
@@ -14,32 +15,17 @@ public static class CreateRoomEndpoint
         group.MapPost("/", Handle)
             .WithName("CreateRoom");
 
-    // Level A: validation is temporarily in the endpoint. It moves into Room.Create at level B.
-    private static Results<Created<Response>, ProblemHttpResult> Handle(
+    private static async Task<Results<Created<Response>, ProblemHttpResult>> Handle(
         Request request,
-        InMemoryRoomStore store)
+        ICommandHandler<CreateRoomCommand, Room> handler,
+        CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            return TypedResults.Problem(
-                detail: "Room name is required.",
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "InvalidName");
+        var result = await handler.Handle(new CreateRoomCommand(request.Name, request.Capacity), ct);
 
-        if (request.Capacity <= 0)
-            return TypedResults.Problem(
-                detail: "Capacity must be positive.",
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "InvalidCapacity");
+        if (result.IsFailure)
+            return result.Error.ToProblem();
 
-        var room = new Room
-        {
-            Id = Guid.NewGuid(),
-            Name = request.Name.Trim(),
-            Capacity = request.Capacity
-        };
-
-        store.Add(room);
-
+        var room = result.Value;
         return TypedResults.Created(
             $"/api/rooms/{room.Id}",
             new Response(room.Id, room.Name, room.Capacity));

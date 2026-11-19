@@ -1,7 +1,11 @@
 using System.Text.Json.Serialization;
+using RoomHub.Api.Common.Cqrs;
+using RoomHub.Api.Domain.Bookings;
+using RoomHub.Api.Domain.Common;
+using RoomHub.Api.Domain.Rooms;
 using RoomHub.Api.Features.Bookings;
 using RoomHub.Api.Features.Rooms;
-using RoomHub.Api.Infrastructure;
+using RoomHub.Api.Infrastructure.InMemory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +16,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Errors not produced by the endpoints (for example invalid JSON) are also ProblemDetails.
 builder.Services.AddProblemDetails();
 
-builder.Services.AddSingleton<InMemoryRoomStore>();
-builder.Services.AddSingleton<InMemoryBookingStore>();
+// "Now" comes from TimeProvider, never from DateTime.UtcNow.
+builder.Services.AddSingleton(TimeProvider.System);
+
+// Level B: in-memory implementations of the domain contracts (EF Core at level C).
+builder.Services.AddSingleton<IRoomRepository, InMemoryRoomRepository>();
+builder.Services.AddSingleton<IBookingRepository, InMemoryBookingRepository>();
+builder.Services.AddSingleton<IUnitOfWork, InMemoryUnitOfWork>();
+
+builder.Services.AddHandlers(typeof(Program).Assembly);
 
 var app = builder.Build();
 

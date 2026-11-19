@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using RoomHub.Api.Common;
 using RoomHub.Api.Domain.Bookings;
-using RoomHub.Api.Infrastructure;
 
 namespace RoomHub.Api.Features.Bookings.GetBookingById;
 
@@ -19,19 +19,17 @@ public static class GetBookingByIdEndpoint
         group.MapGet("/{id:guid}", Handle)
             .WithName("GetBookingById");
 
-    private static Results<Ok<Response>, ProblemHttpResult> Handle(
+    private static async Task<Results<Ok<Response>, ProblemHttpResult>> Handle(
         Guid id,
-        InMemoryBookingStore store)
+        IBookingRepository bookings,
+        CancellationToken ct)
     {
-        var b = store.Find(id);
+        var b = await bookings.GetByIdAsync(id, ct);
 
         if (b is null)
-            return TypedResults.Problem(
-                detail: "The booking does not exist.",
-                statusCode: StatusCodes.Status404NotFound,
-                title: "BookingNotFound");
+            return BookingErrors.NotFound.ToProblem();
 
         return TypedResults.Ok(new Response(
-            b.Id, b.RoomId, b.BookedBy, b.StartUtc, b.EndUtc, b.Attendees, b.Status));
+            b.Id, b.RoomId, b.BookedBy, b.Range.StartUtc, b.Range.EndUtc, b.Attendees, b.Status));
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using RoomHub.Api.Infrastructure;
+using RoomHub.Api.Common;
+using RoomHub.Api.Domain.Rooms;
 
 namespace RoomHub.Api.Features.Rooms.GetRoomById;
 
@@ -11,17 +12,15 @@ public static class GetRoomByIdEndpoint
         group.MapGet("/{id:guid}", Handle)
             .WithName("GetRoomById");
 
-    private static Results<Ok<Response>, ProblemHttpResult> Handle(
+    private static async Task<Results<Ok<Response>, ProblemHttpResult>> Handle(
         Guid id,
-        InMemoryRoomStore store)
+        IRoomRepository rooms,
+        CancellationToken ct)
     {
-        var room = store.Find(id);
+        var room = await rooms.GetByIdAsync(id, ct);
 
         if (room is null)
-            return TypedResults.Problem(
-                detail: "The room does not exist.",
-                statusCode: StatusCodes.Status404NotFound,
-                title: "RoomNotFound");
+            return RoomErrors.NotFound.ToProblem();
 
         return TypedResults.Ok(new Response(room.Id, room.Name, room.Capacity));
     }
