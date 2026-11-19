@@ -126,3 +126,7 @@ Send the repository link at minute 60, before the quiz. Anything committed after
 | 60–70 | Paper quiz, no laptop |
 
 A new requirement is announced at minute 35. Commit often. Run the application after each step.
+
+New requirement (R9). A participant cannot have more than 2 active bookings per day, across all rooms together. The “day” is the UTC date of startUtc. The third active booking on the same day, for the same bookedBy, is rejected with 409. Cancelled bookings do not count. Bookings on different days do not affect each other.
+The rule must live in the domain/handler, not in the endpoint. You may extend the repository with a new method.
+Reminders: commit often (at least 3 commits), update AI-LOG.md, and send me your public repo link at minute 60 (10:00).

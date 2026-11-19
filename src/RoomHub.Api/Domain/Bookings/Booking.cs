@@ -1,4 +1,4 @@
-namespace RoomHub.Api.Models;
+namespace RoomHub.Api.Domain.Bookings;
 
 public enum BookingStatus
 {
@@ -6,6 +6,7 @@ public enum BookingStatus
     Cancelled
 }
 
+// Level A: still an anemic model. It becomes a rich domain class at level B.
 public class Booking
 {
     public Guid Id { get; set; }
