@@ -1,11 +1,13 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 using RoomHub.Api.Common.Cqrs;
 using RoomHub.Api.Domain.Bookings;
 using RoomHub.Api.Domain.Common;
 using RoomHub.Api.Domain.Rooms;
 using RoomHub.Api.Features.Bookings;
 using RoomHub.Api.Features.Rooms;
-using RoomHub.Api.Infrastructure.InMemory;
+using RoomHub.Api.Infrastructure.Persistence;
+using RoomHub.Api.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,14 +21,23 @@ builder.Services.AddProblemDetails();
 // "Now" comes from TimeProvider, never from DateTime.UtcNow.
 builder.Services.AddSingleton(TimeProvider.System);
 
-// Level B: in-memory implementations of the domain contracts (EF Core at level C).
-builder.Services.AddSingleton<IRoomRepository, InMemoryRoomRepository>();
-builder.Services.AddSingleton<IBookingRepository, InMemoryBookingRepository>();
-builder.Services.AddSingleton<IUnitOfWork, InMemoryUnitOfWork>();
+// The DbContext is Scoped: a new instance for each HTTP request.
+builder.Services.AddDbContext<RoomHubDbContext>((serviceProvider, options) =>
+    options.UseSqlite(serviceProvider
+        .GetRequiredService<IConfiguration>()
+        .GetConnectionString("RoomHub")));
+
+// Everything Scoped: the repositories and the Unit of Work share the same DbContext.
+builder.Services.AddScoped<IUnitOfWork>(serviceProvider =>
+    serviceProvider.GetRequiredService<RoomHubDbContext>());
+builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 builder.Services.AddHandlers(typeof(Program).Assembly);
 
 var app = builder.Build();
+
+await app.InitializeDatabaseAsync();
 
 app.UseStatusCodePages();
 
