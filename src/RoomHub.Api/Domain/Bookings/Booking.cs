@@ -53,7 +53,7 @@ public sealed class Booking
 
         var range = rangeResult.Value;
 
-        // R5: "now" is a parameter (from TimeProvider), never DateTime.UtcNow.
+        // R5: "now" is a parameter that comes from TimeProvider.
         if (range.StartUtc < nowUtc)
             return BookingErrors.StartInPast;
 

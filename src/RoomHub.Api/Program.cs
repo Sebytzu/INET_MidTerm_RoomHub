@@ -18,7 +18,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Errors not produced by the endpoints (for example invalid JSON) are also ProblemDetails.
 builder.Services.AddProblemDetails();
 
-// "Now" comes from TimeProvider, never from DateTime.UtcNow.
+// "Now" comes only from TimeProvider (testable clock).
 builder.Services.AddSingleton(TimeProvider.System);
 
 // The DbContext is Scoped: a new instance for each HTTP request.
